@@ -1,33 +1,39 @@
 # AI Daily Planner
 
-The **AI Daily Planner** is a Flask-based scheduling application that uses OpenAI's GPT model to generate personalized daily schedules. The app offers two scheduling modes—one that plans from the current time for "Today" and another that generates a full-day schedule for "Tomorrow". All generated schedules are stored in a local SQLite database and displayed using a modern Bootstrap-based UI.
+Flask app that turns free-form task notes into a structured daily schedule and saves generated plans to a local SQLite database.
+
+The app uses the OpenAI API when `OPENAI_API_KEY` is configured. If no key is available, it falls back to a deterministic local schedule so the app still runs for demos, testing, and screenshots.
 
 ## Features
 
-- **Dynamic Scheduling:**  
-  Choose between generating a schedule starting from the current time ("Today") or a full schedule for the next day ("Tomorrow").
+- Today/tomorrow planning mode
+- OpenAI-powered schedule generation with `OPENAI_MODEL` override support
+- Local no-key fallback schedule
+- SQLite history of recent schedules
+- Clean responsive browser UI
 
-- **AI-Powered Plan Generation:**  
-  Uses OpenAI's GPT-3.5-turbo model to create a structured and personalized schedule based on your input.
+## Run Locally
 
-- **Local Persistence:**  
-  Schedules are saved in a SQLite database and displayed as cards on the web interface.
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python schedulingApp.py
+```
 
-- **Modern UI:**  
-  Built with Bootstrap 5 for a clean and responsive design.
+Open `http://127.0.0.1:3000`.
 
-## Prerequisites
+Optional `.env`:
 
-- Python 3.8+
-- [Flask](https://flask.palletsprojects.com/)
-- [Flask-SQLAlchemy](https://flask-sqlalchemy.palletsprojects.com/)
-- [python-dotenv](https://pypi.org/project/python-dotenv/)
-- [OpenAI Python package](https://pypi.org/project/openai/)
+```bash
+OPENAI_API_KEY=your_api_key
+OPENAI_MODEL=gpt-4o-mini
+```
 
-## Installation
+## Project Files
 
-1. **Clone the Repository**
-
-   ```bash
-   git clone https://github.com/yourusername/your-repo-name.git
-   cd your-repo-name
+```text
+schedulingApp.py        Flask app, planner logic, and UI template
+instance/schedules.db   Local SQLite schedule history
+requirements.txt        Python dependencies
+```

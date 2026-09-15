@@ -1,0 +1,143 @@
+(function () {
+  "use strict";
+
+  const STORAGE_KEY = "day-sheet-plan-v1";
+  const EXAMPLES = {
+    project: "Finish implementation — 90 min\nReview QA notes — 45 min\nWrite release notes — 45 min\nPrepare handoff — 30 min",
+    class: "Review lecture notes — 45 min\nFinish database homework — 90 min\nGym — 60 min\nPack for tomorrow — 20 min",
+    interview: "Review the role — 30 min\nPractice two coding problems — 90 min\nPrepare project stories — 45 min\nWrite questions for the interviewer — 20 min",
+    errands: "Reply to important messages — 30 min\nBook appointments — 30 min\nPick up groceries — 45 min\nUpdate the monthly budget — 30 min",
+    weekend: "Make breakfast — 30 min\nTake a long walk — 60 min\nRead — 45 min\nPlan the coming week — 30 min",
+  };
+  const form = document.querySelector("#planner-form");
+  const notes = document.querySelector("#task-notes");
+  const list = document.querySelector("#schedule-list");
+  const dateLabel = document.querySelector("#schedule-date");
+  const saveStatus = document.querySelector("#save-status");
+  const clearButton = document.querySelector("#clear-plan");
+  const samplePlan = document.querySelector("#sample-plan");
+
+  function parseDuration(text) {
+    const hourMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:hours?|hrs?)/i);
+    if (hourMatch) return Math.max(15, Math.round(Number(hourMatch[1]) * 60));
+    const minuteMatch = text.match(/(\d+)\s*(?:minutes?|mins?)/i);
+    return minuteMatch ? Math.max(15, Number(minuteMatch[1])) : 45;
+  }
+
+  function cleanTask(text) {
+    return text
+      .replace(/^[-*\d.)\s]+/, "")
+      .replace(/\s*[-—,(]?\s*\d+(?:\.\d+)?\s*(?:hours?|hrs?|minutes?|mins?)\)?/i, "")
+      .trim();
+  }
+
+  function parseTasks(value) {
+    return value
+      .split(/\n|;/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .slice(0, 10)
+      .map((line) => ({ title: cleanTask(line) || line, minutes: Math.min(parseDuration(line), 180) }));
+  }
+
+  function formatTime(totalMinutes) {
+    const hours = Math.floor(totalMinutes / 60) % 24;
+    const minutes = totalMinutes % 60;
+    return new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(
+      new Date(2020, 0, 1, hours, minutes),
+    );
+  }
+
+  function startMinutes(day) {
+    if (day === "tomorrow") return 9 * 60;
+    const now = new Date();
+    const rounded = Math.ceil((now.getHours() * 60 + now.getMinutes()) / 15) * 15;
+    return Math.min(Math.max(rounded, 7 * 60), 20 * 60);
+  }
+
+  function buildPlan(tasks, day) {
+    let cursor = startMinutes(day);
+    const blocks = [];
+    tasks.forEach((task, index) => {
+      blocks.push({ ...task, start: cursor, kind: "task" });
+      cursor += task.minutes;
+      if ((index + 1) % 2 === 0 && index < tasks.length - 1) {
+        blocks.push({ title: "Reset and review", minutes: 15, start: cursor, kind: "break" });
+        cursor += 15;
+      }
+    });
+    blocks.push({ title: "Close the loop", minutes: 15, start: cursor, kind: "break" });
+    return blocks;
+  }
+
+  function dayDescription(day) {
+    const value = new Date();
+    if (day === "tomorrow") value.setDate(value.getDate() + 1);
+    return new Intl.DateTimeFormat(undefined, { weekday: "long", month: "long", day: "numeric" }).format(value);
+  }
+
+  function render(plan) {
+    list.replaceChildren();
+    plan.blocks.forEach((block) => {
+      const item = document.createElement("li");
+      item.className = `schedule-item ${block.kind}`;
+
+      const time = document.createElement("span");
+      time.className = "schedule-time";
+      time.textContent = formatTime(block.start);
+
+      const copy = document.createElement("div");
+      copy.className = "schedule-copy";
+      const title = document.createElement("strong");
+      title.textContent = block.title;
+      const duration = document.createElement("span");
+      duration.textContent = `${block.minutes} minutes`;
+      copy.append(title, duration);
+      item.append(time, copy);
+      list.append(item);
+    });
+    dateLabel.textContent = dayDescription(plan.day);
+    saveStatus.textContent = "Saved in this browser. Clearing browser data removes this plan.";
+    clearButton.hidden = false;
+  }
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const tasks = parseTasks(notes.value);
+    if (!tasks.length) {
+      notes.setCustomValidity("Add at least one task to build your day.");
+      notes.reportValidity();
+      return;
+    }
+    notes.setCustomValidity("");
+    const day = new FormData(form).get("day") || "today";
+    const plan = { day, notes: notes.value, blocks: buildPlan(tasks, day) };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(plan));
+    render(plan);
+  });
+
+  notes.addEventListener("input", () => notes.setCustomValidity(""));
+
+  samplePlan.addEventListener("change", () => {
+    if (!EXAMPLES[samplePlan.value]) return;
+    notes.value = EXAMPLES[samplePlan.value];
+    notes.focus();
+  });
+
+  clearButton.addEventListener("click", () => {
+    localStorage.removeItem(STORAGE_KEY);
+    window.location.reload();
+  });
+
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (saved && Array.isArray(saved.blocks) && saved.day) {
+      notes.value = saved.notes || "";
+      const selectedDay = document.querySelector(`input[name="day"][value="${saved.day}"]`);
+      if (selectedDay) selectedDay.checked = true;
+      render(saved);
+    }
+  } catch (_error) {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+})();

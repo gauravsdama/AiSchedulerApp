@@ -5,15 +5,16 @@ import os
 from datetime import datetime
 
 from dotenv import load_dotenv
-from flask import Flask, render_template_string, request, url_for
+from flask import Flask, render_template_string, request
 from flask_sqlalchemy import SQLAlchemy
 from openai import OpenAI
-
 
 load_dotenv()
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///schedules.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
+    "SCHEDULER_DATABASE_URI", "sqlite:///schedules.db"
+)
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
@@ -22,10 +23,6 @@ class Schedule(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     content = db.Column(db.Text, nullable=False)
-
-
-with app.app_context():
-    db.create_all()
 
 
 HTML_TEMPLATE = """
@@ -296,14 +293,8 @@ HTML_TEMPLATE = """
 
         <section class="layout">
             <div>
-                <p class="eyebrow">AI scheduler</p>
                 <h1>Turn messy task notes into a focused daily plan.</h1>
                 <p>Choose today or tomorrow, describe the constraints, and generate a structured schedule that is saved locally for review.</p>
-                <div class="pill-row" aria-label="Planner features">
-                    <span class="pill">SQLite history</span>
-                    <span class="pill">Today/tomorrow planning</span>
-                    <span class="pill gold">No-key fallback</span>
-                </div>
             </div>
 
             <div class="panel">
@@ -366,7 +357,7 @@ def _make_openai_client() -> OpenAI | None:
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         return None
-    return OpenAI(api_key=api_key)
+    return OpenAI(api_key=api_key, timeout=30.0, max_retries=1)
 
 
 def _schedule_instructions(schedule_date: str) -> tuple[str, str]:
@@ -385,11 +376,11 @@ def _schedule_instructions(schedule_date: str) -> tuple[str, str]:
 def _fallback_schedule(user_input: str, schedule_date: str) -> str:
     start_label = "Now" if schedule_date == "today" else "9:00 AM"
     return (
-        f"{start_label} - Capture priorities and choose the top three outcomes.\\n"
-        "Focus block 1 - Work on the most time-sensitive task from your notes.\\n"
-        "Break - Reset, hydrate, and check for schedule conflicts.\\n"
-        "Focus block 2 - Handle the next highest-impact task or errand.\\n"
-        "Wrap-up - Review progress, move unfinished items, and prepare tomorrow's first step.\\n\\n"
+        f"{start_label} - Capture priorities and choose the top three outcomes.\n"
+        "Focus block 1 - Work on the most time-sensitive task from your notes.\n"
+        "Break - Reset, hydrate, and check for schedule conflicts.\n"
+        "Focus block 2 - Handle the next highest-impact task or errand.\n"
+        "Wrap-up - Review progress, move unfinished items, and prepare tomorrow's first step.\n\n"
         f"Notes considered: {user_input[:220]}"
     )
 
@@ -427,16 +418,21 @@ def daily_planner():
 
     if request.method == "POST":
         values["input_text"] = request.form.get("input_text", "").strip()
-        values["schedule_date"] = request.form.get("schedule_date", "today")
+        requested_date = request.form.get("schedule_date", "today")
+        values["schedule_date"] = (
+            requested_date if requested_date in {"today", "tomorrow"} else "today"
+        )
 
         if values["input_text"]:
             try:
                 response_text = generate_schedule(values["input_text"], values["schedule_date"])
                 db.session.add(Schedule(content=response_text))
                 db.session.commit()
-            except Exception as exc:
+            except Exception:
                 logging.exception("Error generating schedule")
-                response_text = f"Schedule generation failed: {exc}"
+                response_text = (
+                    "Couldn’t build the plan. Check the API configuration or try the local planner."
+                )
 
     schedules = Schedule.query.order_by(Schedule.created_at.desc()).limit(5).all()
     mode_label, _ = _schedule_instructions(values["schedule_date"])
@@ -455,4 +451,6 @@ def healthz():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=3000, debug=True)
+    with app.app_context():
+        db.create_all()
+    app.run(host="127.0.0.1", port=3000, debug=False)

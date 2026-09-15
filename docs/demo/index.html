@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="A private, deterministic daily planner that runs entirely in your browser." />
+    <title>Day Sheet — Daily planner demo</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="masthead">
+      <a class="wordmark" href="./" aria-label="Day Sheet home">DAY / SHEET</a>
+      <p>Local browser demo · no account or API key</p>
+    </header>
+
+    <main>
+      <section class="planner" aria-labelledby="planner-title">
+        <div class="brief">
+          <h1 id="planner-title">Turn a rough list into a day you can actually follow.</h1>
+          <p class="intro">Add one task per line. Include a duration such as “45 min” when it matters. Your plan stays in this browser.</p>
+
+          <form id="planner-form">
+            <label for="task-notes">What needs your attention?</label>
+            <textarea id="task-notes" name="task-notes" maxlength="1200" required placeholder="Finish database homework — 90 min&#10;Gym — 60 min&#10;Call Mom&#10;Pick up groceries — 30 min"></textarea>
+
+            <fieldset>
+              <legend>Plan for</legend>
+              <div class="day-toggle">
+                <input id="today" name="day" type="radio" value="today" checked />
+                <label for="today">Today</label>
+                <input id="tomorrow" name="day" type="radio" value="tomorrow" />
+                <label for="tomorrow">Tomorrow</label>
+              </div>
+            </fieldset>
+
+            <div class="form-actions">
+              <button type="submit">Build my day</button>
+              <div class="example-picker">
+                <label for="sample-plan">Start from an example</label>
+                <select id="sample-plan" name="sample-plan">
+                  <option value="">Choose a plan</option>
+                  <option value="project">Project deadline</option>
+                  <option value="class">Class and gym</option>
+                  <option value="interview">Interview prep</option>
+                  <option value="errands">Errands and admin</option>
+                  <option value="weekend">Quiet weekend reset</option>
+                </select>
+              </div>
+            </div>
+            <p class="form-note">This demo uses simple, visible planning rules—not AI.</p>
+          </form>
+        </div>
+
+        <section class="day-sheet" aria-labelledby="schedule-title" aria-live="polite">
+          <div class="sheet-heading">
+            <div>
+              <p class="kicker" id="schedule-date">Ready when you are</p>
+              <h2 id="schedule-title">Your day sheet</h2>
+            </div>
+            <button class="text-button" id="clear-plan" type="button" hidden>Clear saved plan</button>
+          </div>
+
+          <ol class="schedule" id="schedule-list">
+            <li class="empty-state">
+              <span class="empty-time">09:00</span>
+              <p>Your time blocks will appear here. Start with the few things that would make the day feel complete.</p>
+            </li>
+          </ol>
+          <p class="save-status" id="save-status">Nothing is saved until you build a plan.</p>
+        </section>
+      </section>
+    </main>
+
+    <footer>
+      <p>Day Sheet is the static showcase for the AI Daily Planner Flask project.</p>
+      <a href="https://github.com/gauravsdama/AiSchedulerApp">Project notes</a>
+    </footer>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

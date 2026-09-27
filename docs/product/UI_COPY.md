@@ -1,7 +1,7 @@
 # AI Daily Planner UI copy
 
 This is the human-owned source of truth for every user-facing string in the
-Flask app and static Day Sheet demo. Stable IDs remain unchanged when text is
+Flask app and static AI Scheduler demo. Stable IDs remain unchanged when text is
 edited. Runtime text must match this inventory exactly.
 
 ## Flask app
@@ -38,42 +38,39 @@ edited. Runtime text must match this inventory exactly.
 The optional remote model generates free-form plan text, so its output cannot
 be pre-inventoried. It is always displayed beneath `planner.flask.result.title`.
 
-## Static Day Sheet demo
+## Static AI Scheduler demo
 
 | ID | State / component | Approved text | Location |
 | --- | --- | --- | --- |
-| `planner.demo.meta.description` | Page metadata | A private, deterministic daily planner that runs entirely in your browser. | `index.html` |
-| `planner.demo.meta.title` | Browser title | Day Sheet — Daily planner demo | `index.html` |
-| `planner.demo.brand.label` | Accessible home label | Day Sheet home | `index.html` |
-| `planner.demo.brand` | Brand | DAY / SHEET | `index.html` |
-| `planner.demo.disclosure` | Privacy/capability note | Local browser demo · no account or API key | `index.html` |
-| `planner.demo.hero` | Main heading | Turn a rough list into a day you can actually follow. | `index.html` |
-| `planner.demo.intro` | Input guidance | Add one task per line. Include a duration such as “45 min” when it matters. Your plan stays in this browser. | `index.html` |
-| `planner.demo.input.label` | Notes label | What needs your attention? | `index.html` |
-| `planner.demo.input.placeholder` | Notes example | Finish database homework — 90 min\nGym — 60 min\nCall Mom\nPick up groceries — 30 min | `index.html` |
+| `planner.demo.meta.description` | Page metadata | AI Scheduler daily planning demo. | `index.html` |
+| `planner.demo.meta.title` | Browser title | AI Scheduler | `index.html` |
+| `planner.demo.brand.label` | Accessible home label | AI Scheduler home | `index.html` |
+| `planner.demo.brand` | Brand | AI SCHEDULER | `index.html` |
+| `planner.demo.hero` | Main heading | AI Scheduler | `index.html` |
+| `planner.demo.intro` | Input guidance | Enter one task per line and include a duration when it matters. Build the schedule to see the tasks arranged into time blocks. | `index.html` |
+| `planner.demo.input.label` | Notes label | Tasks | `index.html` |
+| `planner.demo.input.example` | Initial task list | Review lecture notes — 45 min\nFinish database homework — 90 min\nGym — 60 min\nPack for tomorrow — 20 min | `index.html` |
 | `planner.demo.day.label` | Day choice legend | Plan for | `index.html` |
-| `planner.demo.submit` | Primary action | Build my day | `index.html` |
-| `planner.demo.examples.label` | Sample selector label | Start from an example | `index.html` |
+| `planner.demo.submit` | Primary action | Build schedule | `index.html` |
+| `planner.demo.examples.label` | Sample selector label | Examples | `index.html` |
 | `planner.demo.examples.empty` | Sample selector placeholder | Choose a plan | `index.html` |
 | `planner.demo.examples.project` | Sample plan | Project deadline | `index.html` |
 | `planner.demo.examples.class` | Sample plan | Class and gym | `index.html` |
 | `planner.demo.examples.interview` | Sample plan | Interview prep | `index.html` |
 | `planner.demo.examples.errands` | Sample plan | Errands and admin | `index.html` |
 | `planner.demo.examples.weekend` | Sample plan | Quiet weekend reset | `index.html` |
-| `planner.demo.rules` | Capability disclosure | This demo uses simple, visible planning rules—not AI. | `index.html` |
-| `planner.demo.ready` | Initial schedule date | Ready when you are | `index.html` |
-| `planner.demo.result.title` | Result heading | Your day sheet | `index.html` |
+| `planner.demo.ready` | Initial schedule date | Today | `index.html` |
+| `planner.demo.result.title` | Result heading | Schedule | `index.html` |
 | `planner.demo.clear` | Destructive action | Clear saved plan | `index.html` |
 | `planner.demo.empty.time` | Empty-sheet time | 09:00 | `index.html` |
-| `planner.demo.empty` | Empty state | Your time blocks will appear here. Start with the few things that would make the day feel complete. | `index.html` |
-| `planner.demo.unsaved` | Initial persistence state | Nothing is saved until you build a plan. | `index.html` |
-| `planner.demo.footer` | Project relationship | Day Sheet is the static showcase for the AI Daily Planner Flask project. | `index.html` |
-| `planner.demo.project-link` | Repository link | Project notes | `index.html` |
+| `planner.demo.empty` | Empty state | The generated schedule appears here. | `index.html` |
+| `planner.demo.unsaved` | Initial persistence state | Edit the tasks and rebuild to update the schedule. | `index.html` |
+| `planner.demo.project-link` | Repository link | View source | `index.html` |
 | `planner.demo.validation` | Empty-input validation | Add at least one task to build your day. | `app.js` |
 | `planner.demo.break` | Inserted break | Reset and review | `app.js` |
 | `planner.demo.close` | Final block | Close the loop | `app.js` |
 | `planner.demo.duration` | Duration suffix | {minutes} minutes | `app.js` |
-| `planner.demo.saved` | Persistence confirmation | Saved in this browser. Clearing browser data removes this plan. | `app.js` |
+| `planner.demo.saved` | Update confirmation | Schedule updated. | `app.js` |
 | `planner.demo.date` | Schedule date | Locale-formatted weekday, month, and day | `app.js` |
 
 ## Required states

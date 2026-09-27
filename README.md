@@ -9,7 +9,7 @@ The app uses the OpenAI API when `OPENAI_API_KEY` is configured. If no key is av
 - Today/tomorrow planning mode
 - OpenAI-powered schedule generation with `OPENAI_MODEL` override support
 - Local no-key fallback schedule
-- SQLite history of the five most recent schedules
+- SQLite history capped at five schedules, with consecutive duplicate results stored once
 - Responsive single-page browser UI
 
 ## Run Locally
@@ -62,15 +62,18 @@ static demo and no-key fallback make no network request.
 ```text
 schedulingApp.py        Flask app, planner logic, and UI template
 instance/schedules.db   Local SQLite schedule history
-requirements.txt        Python dependencies
+pyproject.toml          Package metadata and direct dependencies
 uv.lock                 Exact resolved dependency graph
 ```
 
 ## Verify
 
 ```bash
+uv lock --check
+uv run ruff format --check schedulingApp.py tests scripts
 uv run pytest -q
-uv run ruff check schedulingApp.py tests scripts/release_guard.py
+node --test tests/test_demo.js
+uv run ruff check schedulingApp.py tests scripts
 uv run pip-audit
 uv run python scripts/release_guard.py
 uv build

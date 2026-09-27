@@ -3,19 +3,28 @@ from __future__ import annotations
 import logging
 import os
 from datetime import datetime
+from pathlib import Path
 
 from dotenv import load_dotenv
-from flask import Flask, render_template_string, request
+from flask import Flask, abort, render_template_string, request
 from flask_sqlalchemy import SQLAlchemy
 from openai import OpenAI
 
 load_dotenv()
+
+MAX_INPUT_CHARS = 1_000
+MAX_REQUEST_BYTES = 16_384
+MAX_SCHEDULE_CHARS = 8_000
+HISTORY_LIMIT = 5
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
     "SCHEDULER_DATABASE_URI", "sqlite:///schedules.db"
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["MAX_CONTENT_LENGTH"] = MAX_REQUEST_BYTES
+if app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite:"):
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"connect_args": {"timeout": 5}}
 db = SQLAlchemy(app)
 
 
@@ -25,6 +34,17 @@ class Schedule(db.Model):
     content = db.Column(db.Text, nullable=False)
 
 
+def initialize_storage() -> None:
+    """Create the local schema for both direct and WSGI imports."""
+    if app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite:"):
+        Path(app.instance_path).mkdir(parents=True, exist_ok=True)
+    with app.app_context():
+        db.create_all()
+
+
+initialize_storage()
+
+
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
@@ -32,6 +52,7 @@ HTML_TEMPLATE = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>AI Daily Planner</title>
+    <link rel="icon" href="data:,">
     <style>
         :root {
             --bg: #f5f4ee;
@@ -298,7 +319,7 @@ HTML_TEMPLATE = """
             </div>
 
             <div class="panel">
-                <form method="post" action="{{ url_for('daily_planner') }}" class="form-stack">
+                <form method="post" action="{{ url_for('daily_planner') }}" class="form-stack" id="planner-form">
                     <div>
                         <label for="input_text">Planning details</label>
                         <textarea name="input_text" id="input_text" maxlength="1000" placeholder="Example: Work 9-5, gym at 7pm, finish database homework, and leave time for dinner." required>{{ values.input_text }}</textarea>
@@ -314,7 +335,7 @@ HTML_TEMPLATE = """
                         </div>
                     </div>
 
-                    <button type="submit">Generate Plan</button>
+                    <button type="submit" id="submit-button">Generate Plan</button>
                 </form>
 
                 {% if response %}
@@ -348,6 +369,19 @@ HTML_TEMPLATE = """
             </div>
         </section>
     </main>
+    <script>
+        const plannerForm = document.querySelector('#planner-form');
+        const submitButton = document.querySelector('#submit-button');
+        plannerForm.addEventListener('submit', (event) => {
+            if (submitButton.disabled) {
+                event.preventDefault();
+                return;
+            }
+            if (plannerForm.checkValidity()) {
+                submitButton.disabled = true;
+            }
+        });
+    </script>
 </body>
 </html>
 """
@@ -405,7 +439,26 @@ def generate_schedule(user_input: str, schedule_date: str) -> str:
         max_tokens=700,
         temperature=0.6,
     )
-    return api_response.choices[0].message.content or _fallback_schedule(user_input, schedule_date)
+    content = api_response.choices[0].message.content
+    return (content or _fallback_schedule(user_input, schedule_date))[:MAX_SCHEDULE_CHARS]
+
+
+def _save_schedule(content: str) -> None:
+    latest = db.session.execute(
+        db.select(Schedule).order_by(Schedule.created_at.desc(), Schedule.id.desc()).limit(1)
+    ).scalar_one_or_none()
+    if latest is None or latest.content != content:
+        db.session.add(Schedule(content=content))
+        db.session.flush()
+
+    stale_ids = db.session.scalars(
+        db.select(Schedule.id)
+        .order_by(Schedule.created_at.desc(), Schedule.id.desc())
+        .offset(HISTORY_LIMIT)
+    ).all()
+    if stale_ids:
+        db.session.execute(db.delete(Schedule).where(Schedule.id.in_(stale_ids)))
+    db.session.commit()
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -418,6 +471,8 @@ def daily_planner():
 
     if request.method == "POST":
         values["input_text"] = request.form.get("input_text", "").strip()
+        if len(values["input_text"]) > MAX_INPUT_CHARS:
+            abort(413)
         requested_date = request.form.get("schedule_date", "today")
         values["schedule_date"] = (
             requested_date if requested_date in {"today", "tomorrow"} else "today"
@@ -426,15 +481,20 @@ def daily_planner():
         if values["input_text"]:
             try:
                 response_text = generate_schedule(values["input_text"], values["schedule_date"])
-                db.session.add(Schedule(content=response_text))
-                db.session.commit()
+                response_text = response_text[:MAX_SCHEDULE_CHARS]
+                _save_schedule(response_text)
             except Exception:
+                db.session.rollback()
                 logging.exception("Error generating schedule")
                 response_text = (
                     "Couldn’t build the plan. Check the API configuration or try the local planner."
                 )
 
-    schedules = Schedule.query.order_by(Schedule.created_at.desc()).limit(5).all()
+    schedules = (
+        Schedule.query.order_by(Schedule.created_at.desc(), Schedule.id.desc())
+        .limit(HISTORY_LIMIT)
+        .all()
+    )
     mode_label, _ = _schedule_instructions(values["schedule_date"])
     return render_template_string(
         HTML_TEMPLATE,
@@ -451,6 +511,4 @@ def healthz():
 
 
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
     app.run(host="127.0.0.1", port=3000, debug=False)

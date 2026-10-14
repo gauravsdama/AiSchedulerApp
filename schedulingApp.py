@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -30,7 +30,7 @@ db = SQLAlchemy(app)
 
 class Schedule(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None))
     content = db.Column(db.Text, nullable=False)
 
 

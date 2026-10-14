@@ -39,8 +39,8 @@ python -m http.server 8080
 Then open `http://127.0.0.1:8080/docs/`. The Pages root redirects to the demo,
 which uses only relative assets and no client-side routes. It therefore works
 under the `/AiSchedulerApp/` GitHub Pages base path and on direct reload.
-Configure Pages to publish from the repository's `docs/` folder when it is
-ready to go live.
+GitHub Pages publishes the repository's `docs/` folder at
+<https://gauravsdama.github.io/AiSchedulerApp/>.
 
 The UI copy inventory and editorial workflow live in
 [`docs/product/UI_COPY.md`](docs/product/UI_COPY.md).

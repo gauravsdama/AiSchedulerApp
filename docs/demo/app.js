@@ -85,8 +85,21 @@
     return new Intl.DateTimeFormat(undefined, { weekday: "long", month: "long", day: "numeric" }).format(value);
   }
 
+  function persistenceState(isSaved) {
+    return isSaved
+      ? { clearHidden: false, status: "Schedule updated." }
+      : { clearHidden: true, status: "Edit the tasks and rebuild to update the schedule." };
+  }
+
   if (typeof document === "undefined") {
-    module.exports = { buildPlan, cleanTask, parseDuration, parseTasks, startMinutes };
+    module.exports = {
+      buildPlan,
+      cleanTask,
+      parseDuration,
+      parseTasks,
+      persistenceState,
+      startMinutes,
+    };
     return;
   }
 
@@ -98,7 +111,7 @@
   const clearButton = document.querySelector("#clear-plan");
   const samplePlan = document.querySelector("#sample-plan");
 
-  function render(plan) {
+  function render(plan, { isSaved = true } = {}) {
     list.replaceChildren();
     plan.blocks.forEach((block) => {
       const item = document.createElement("li");
@@ -119,8 +132,9 @@
       list.append(item);
     });
     dateLabel.textContent = dayDescription(plan.day);
-    saveStatus.textContent = "Schedule updated.";
-    clearButton.hidden = false;
+    const persistence = persistenceState(isSaved);
+    saveStatus.textContent = persistence.status;
+    clearButton.hidden = persistence.clearHidden;
   }
 
   form.addEventListener("submit", (event) => {
@@ -159,11 +173,14 @@
       if (selectedDay) selectedDay.checked = true;
       render(saved);
     } else {
-      render({
-        day: "today",
-        notes: notes.value,
-        blocks: buildPlan(parseTasks(notes.value), "today", new Date(2026, 7, 16, 9, 0)),
-      });
+      render(
+        {
+          day: "today",
+          notes: notes.value,
+          blocks: buildPlan(parseTasks(notes.value), "today", new Date(2026, 7, 16, 9, 0)),
+        },
+        { isSaved: false },
+      );
     }
   } catch (_error) {
     localStorage.removeItem(STORAGE_KEY);

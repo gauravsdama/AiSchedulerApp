@@ -3,7 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { buildPlan, cleanTask, parseTasks } = require("../docs/demo/app.js");
+const { buildPlan, cleanTask, parseTasks, persistenceState } = require("../docs/demo/app.js");
 
 test("numeric task titles survive list-marker cleanup", () => {
   assert.equal(cleanTask("1. Write release notes"), "Write release notes");
@@ -30,4 +30,15 @@ test("a plan never crosses the selected day boundary", () => {
   assert.equal(blocks.at(-1).start + blocks.at(-1).minutes, 24 * 60);
   assert.ok(blocks.every((block) => block.start >= 0));
   assert.ok(blocks.every((block) => block.start + block.minutes <= 24 * 60));
+});
+
+test("only a saved plan exposes the clear action", () => {
+  assert.deepEqual(persistenceState(false), {
+    clearHidden: true,
+    status: "Edit the tasks and rebuild to update the schedule.",
+  });
+  assert.deepEqual(persistenceState(true), {
+    clearHidden: false,
+    status: "Schedule updated.",
+  });
 });

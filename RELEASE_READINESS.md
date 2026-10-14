@@ -1,6 +1,6 @@
 # Release readiness
 
-Last verified: 2026-09-15
+Last verified: 2026-10-14
 
 ## Verdict
 
@@ -46,17 +46,18 @@ uv lock --check
 uv run ruff format --check schedulingApp.py tests scripts
 uv run ruff check schedulingApp.py tests scripts
 uv run pytest -q                         # 13 passed
-node --test tests/test_demo.js           # 3 passed
+node --test tests/test_demo.js           # 4 passed
 uv run pip-audit                         # no known vulnerabilities
 uv run python scripts/release_guard.py   # passed, 21 release files
 uv build
 uv run python scripts/verify_distribution.py
 ```
 
-Browser verification launched the Flask app and `docs/demo/`, exercised empty,
-sample, and populated plans, checked the explicit no-AI disclosure, verified
-320 px layout without horizontal overflow, and observed no console errors,
-page errors, or failed requests.
+Browser verification exercised all five sample plans in desktop and 320 px
+layouts, tested saved and cleared state, keyboard focus, 200% zoom, reduced
+motion, and accessibility rules, and observed no console errors, page errors,
+failed requests, or horizontal overflow. GitHub Pages served the current
+commit over HTTPS with the expected HTML, JavaScript, and CSS MIME types.
 
 Current screenshots:
 
@@ -81,5 +82,4 @@ Current screenshots:
 - The optional OpenAI path sends submitted notes to that service and was not
   exercised with a live key during this release pass.
 - The Flask server has no authentication and is intentionally local-only.
-- GitHub Pages settings and the hosted CI result remain external checks after
-  the owner commits the working tree.
+- Hosted CI and the Pages deployment are checked after each pushed change.
